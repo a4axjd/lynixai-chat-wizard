@@ -5,6 +5,7 @@ import ChatMessage from "./ChatMessage";
 import ChatInput from "./ChatInput";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const ChatView: React.FC = () => {
   const { currentChat, addMessage } = useChatContext();
@@ -27,40 +28,39 @@ const ChatView: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Mock AI response since we don't have a real backend yet
-      setTimeout(() => {
-        // Check if the message is asking for an image
-        const isImageRequest = /generate|create|draw|show|make.*image|picture|photo/i.test(message);
-        
-        if (isImageRequest) {
-          // Use a placeholder image for now
-          addMessage("https://images.unsplash.com/photo-1488590528505-98d2b5aba04b", "assistant", true);
-        } else {
-          let response = "I'm LynixAI, a helpful assistant. ";
-          
-          // Check if asking for code
-          if (/create|generate|write.*code|function|component|html|css|javascript|react|typescript/i.test(message)) {
-            response += "Here's the code you requested:\n\n```javascript\n" +
-              "// Example code based on your request\n" +
-              "function greeting(name) {\n" +
-              "  return `Hello, ${name}! Welcome to LynixAI.`;\n" +
-              "}\n\n" +
-              "// Usage\n" +
-              "const message = greeting('User');\n" +
-              "console.log(message);\n```";
-          } else {
-            response += "I can answer questions, generate code, fix bugs, and create images. How can I help you today?";
-          }
-          
-          addMessage(response, "assistant");
+      // Get all previous messages for context (limit to last 10)
+      const previousMessages = currentChat?.messages
+        .slice(-10)
+        .map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }));
+
+      // Add the new user message
+      previousMessages.push({
+        role: "user",
+        content: message
+      });
+
+      // Call the Azure OpenAI edge function
+      const { data, error } = await supabase.functions.invoke("azure-chat", {
+        body: {
+          messages: previousMessages
         }
-        
-        setIsLoading(false);
-      }, 1000);
-      
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data) {
+        // Add the assistant's response to the chat
+        addMessage(data.content, "assistant", data.isImage);
+      }
     } catch (error) {
       console.error("Failed to process message:", error);
-      addMessage("Sorry, I encountered an error processing your request.", "assistant");
+      addMessage("Sorry, I encountered an error processing your request. Please try again.", "assistant");
+    } finally {
       setIsLoading(false);
     }
   };
