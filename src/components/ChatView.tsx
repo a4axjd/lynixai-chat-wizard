@@ -4,13 +4,17 @@ import { useChatContext } from "@/context/ChatContext";
 import ChatMessage from "./ChatMessage";
 import ChatInput from "./ChatInput";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
 
 const ChatView: React.FC = () => {
   const { currentChat, addMessage } = useChatContext();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -21,6 +25,9 @@ const ChatView: React.FC = () => {
   }, [currentChat?.messages]);
 
   const handleSendMessage = async (message: string) => {
+    // Reset any previous errors
+    setError(null);
+    
     // Add user message to chat
     addMessage(message, "user");
 
@@ -50,16 +57,36 @@ const ChatView: React.FC = () => {
       });
 
       if (error) {
+        console.error("Supabase function error:", error);
         throw new Error(error.message);
+      }
+
+      if (data?.isConfigured === false) {
+        // Configuration is missing
+        setError("Azure OpenAI is not properly configured. Please check your API keys and endpoint.");
+        toast({
+          title: "Configuration Error",
+          description: "Azure OpenAI is not properly configured. Please check your API keys and endpoint.",
+          variant: "destructive"
+        });
+        return;
       }
 
       if (data) {
         // Add the assistant's response to the chat
         addMessage(data.content, "assistant", data.isImage);
+      } else {
+        throw new Error("No data returned from Azure OpenAI");
       }
     } catch (error) {
       console.error("Failed to process message:", error);
+      setError("Failed to get a response. Please try again.");
       addMessage("Sorry, I encountered an error processing your request. Please try again.", "assistant");
+      toast({
+        title: "Error",
+        description: "Failed to get a response from AI service. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -68,6 +95,16 @@ const ChatView: React.FC = () => {
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto">
+        {error && (
+          <div className="p-4">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          </div>
+        )}
+        
         {currentChat?.messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center p-4">
             <h3 className="text-2xl font-bold text-primary mb-2">Welcome to LynixAI</h3>

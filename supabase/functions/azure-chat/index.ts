@@ -17,6 +17,21 @@ serve(async (req) => {
   }
 
   try {
+    // Check if environment variables are available
+    if (!AZURE_OPENAI_API_KEY || !AZURE_OPENAI_ENDPOINT || !AZURE_OPENAI_DEPLOYMENT_NAME) {
+      console.error("Missing required environment variables");
+      return new Response(
+        JSON.stringify({ 
+          error: "Missing Azure OpenAI configuration. Please check your environment variables.",
+          isConfigured: false
+        }),
+        { 
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        }
+      );
+    }
+
     const { messages } = await req.json();
     
     // Check if it's an image generation request
@@ -27,6 +42,8 @@ serve(async (req) => {
     if (isImageRequest) {
       // Call Azure OpenAI DALL-E API for image generation
       const imagePrompt = messages[messages.length - 1].content;
+      
+      console.log("Sending image generation request to Azure OpenAI");
       
       const imageResponse = await fetch(
         `${AZURE_OPENAI_ENDPOINT}/openai/images/generations:submit?api-version=2023-12-01-preview`,
@@ -48,7 +65,16 @@ serve(async (req) => {
       if (!imageResponse.ok) {
         const errorData = await imageResponse.text();
         console.error("Azure OpenAI image generation error:", errorData);
-        throw new Error(`Failed to generate image: ${errorData}`);
+        
+        return new Response(
+          JSON.stringify({ 
+            isImage: false, 
+            content: "I'm sorry, I couldn't generate that image. There might be an issue with my connection to Azure OpenAI or with the prompt content. Please try again with a different prompt or contact support if this persists."
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
       }
 
       const imageData = await imageResponse.json();
@@ -78,7 +104,15 @@ serve(async (req) => {
       }
       
       if (!imageResult) {
-        throw new Error("Image generation timed out");
+        return new Response(
+          JSON.stringify({ 
+            isImage: false, 
+            content: "The image generation took too long to process. Please try again with a simpler prompt." 
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
       }
       
       return new Response(
@@ -92,6 +126,9 @@ serve(async (req) => {
       );
     } else {
       // Regular text completion
+      console.log("Sending chat completion request to Azure OpenAI");
+      console.log(`Endpoint: ${AZURE_OPENAI_ENDPOINT}/openai/deployments/${AZURE_OPENAI_DEPLOYMENT_NAME}/chat/completions?api-version=2023-05-15`);
+      
       const chatResponse = await fetch(
         `${AZURE_OPENAI_ENDPOINT}/openai/deployments/${AZURE_OPENAI_DEPLOYMENT_NAME}/chat/completions?api-version=2023-05-15`,
         {
@@ -117,7 +154,16 @@ serve(async (req) => {
       if (!chatResponse.ok) {
         const errorText = await chatResponse.text();
         console.error("Azure OpenAI error:", errorText);
-        throw new Error(`Failed to get response: ${errorText}`);
+        
+        return new Response(
+          JSON.stringify({ 
+            isImage: false, 
+            content: "I'm sorry, I couldn't process your request due to a connection issue with Azure OpenAI. Please try again in a moment or contact support if this persists." 
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
       }
 
       const chatData = await chatResponse.json();
@@ -136,7 +182,10 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error:", error.message);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        isImage: false, 
+        content: "I encountered an unexpected error processing your request. Please try again or contact support if this persists." 
+      }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

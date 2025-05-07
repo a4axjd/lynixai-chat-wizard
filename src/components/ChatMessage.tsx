@@ -1,8 +1,8 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Message } from "../types/chat";
 import { cn } from "@/lib/utils";
-import { Image } from "lucide-react";
+import { Image, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -13,6 +13,7 @@ interface ChatMessageProps {
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const isUser = message.role === "user";
+  const [isImageLoading, setIsImageLoading] = useState(message.isImage || false);
   
   // Format date for display
   const formattedDate = new Date(message.timestamp).toLocaleTimeString([], {
@@ -51,11 +52,18 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                 <Image size={16} />
                 <span>Generated Image</span>
               </div>
-              <div className="mt-1 rounded-lg overflow-hidden border border-gray-200">
+              <div className="mt-1 rounded-lg overflow-hidden border border-gray-200 relative">
+                {isImageLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                )}
                 <img 
                   src={message.content} 
                   alt="AI generated" 
                   className="w-full max-h-96 object-contain"
+                  onLoad={() => setIsImageLoading(false)}
+                  onError={() => setIsImageLoading(false)}
                 />
               </div>
             </div>
