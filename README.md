@@ -1,73 +1,68 @@
-# Welcome to your Lovable project
 
-## Project info
+# LynixAI - Lightweight ChatGPT Alternative
 
-**URL**: https://lovable.dev/projects/3e02e81c-e2ca-4fc8-9c4a-027f84291f81
+LynixAI is a free and lightweight ChatGPT alternative that allows you to ask questions, generate code, fix bugs, and create images using AI.
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- Clean chat interface with user and assistant messages
+- Ask general questions
+- Request code generation with syntax highlighting
+- Submit broken code for fixes
+- Ask for image generation
+- Persistent chat history using localStorage
+- Mobile responsive design
 
-**Use Lovable**
+## Tech Stack
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/3e02e81c-e2ca-4fc8-9c4a-027f84291f81) and start prompting.
+- Frontend: React with TypeScript
+- Styling: Tailwind CSS
+- UI Components: shadcn/ui
+- Markdown Rendering: react-markdown
+- Code Highlighting: react-syntax-highlighter
 
-Changes made via Lovable will be committed automatically to this repo.
+## Local Development
 
-**Use your preferred IDE**
+### Prerequisites
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- Node.js (v18+)
+- npm, yarn, or pnpm
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Setup
 
-Follow these steps:
+1. Clone this repository
+2. Install dependencies
+   ```bash
+   npm install
+   # or
+   yarn install
+   # or
+   pnpm install
+   ```
+3. Run the development server
+   ```bash
+   npm run dev
+   # or
+   yarn dev
+   # or
+   pnpm dev
+   ```
+4. Open [http://localhost:8080](http://localhost:8080) in your browser
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## Connecting to Supabase and Azure OpenAI
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+For full functionality including backend capabilities, you'll need to:
 
-# Step 3: Install the necessary dependencies.
-npm i
+1. Set up a Supabase project at https://supabase.com/
+2. Create an Azure account and set up Azure OpenAI service
+3. Add the following environment variables to your Supabase Edge Functions:
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+AZURE_OPENAI_API_KEY=your-azure-openai-api-key
+AZURE_ENDPOINT=your-azure-endpoint
+AZURE_DEPLOYMENT_NAME=your-deployment-name
 ```
 
-**Edit a file directly in GitHub**
+## License
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/3e02e81c-e2ca-4fc8-9c4a-027f84291f81) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+MIT
