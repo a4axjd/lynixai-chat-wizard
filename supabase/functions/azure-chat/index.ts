@@ -4,6 +4,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const AZURE_OPENAI_API_KEY = Deno.env.get("AZURE_OPENAI_API_KEY");
 const AZURE_OPENAI_ENDPOINT = Deno.env.get("AZURE_OPENAI_ENDPOINT");
 const AZURE_OPENAI_DEPLOYMENT_NAME = Deno.env.get("AZURE_OPENAI_DEPLOYMENT_NAME");
+const AZURE_OPENAI_DALLE_DEPLOYMENT = Deno.env.get("AZURE_OPENAI_DALLE_DEPLOYMENT");
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -40,6 +41,20 @@ serve(async (req) => {
     );
 
     if (isImageRequest) {
+      // Check if DALLE deployment is configured
+      if (!AZURE_OPENAI_DALLE_DEPLOYMENT) {
+        console.error("Missing DALLE deployment configuration");
+        return new Response(
+          JSON.stringify({ 
+            isImage: false, 
+            content: "Image generation is not configured. Please set up the AZURE_OPENAI_DALLE_DEPLOYMENT environment variable."
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
       // Call Azure OpenAI DALL-E API for image generation
       const imagePrompt = messages[messages.length - 1].content;
       
@@ -58,6 +73,7 @@ serve(async (req) => {
             n: 1,
             size: "1024x1024",
             response_format: "url",
+            model: AZURE_OPENAI_DALLE_DEPLOYMENT,
           }),
         }
       );
@@ -69,7 +85,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             isImage: false, 
-            content: "I'm sorry, I couldn't generate that image. There might be an issue with my connection to Azure OpenAI or with the prompt content. Please try again with a different prompt or contact support if this persists."
+            content: "I'm sorry, I couldn't generate that image. The Azure OpenAI DALL-E service returned an error. Please make sure the DALL-E deployment is configured correctly."
           }),
           {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
