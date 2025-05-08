@@ -124,6 +124,8 @@ const ChatView: React.FC = () => {
                 "Explain quantum computing in simple terms",
                 "Write a function to check if a number is prime",
                 "Create an image of a futuristic city",
+                "Generate an image of a cat wearing sunglasses",
+                "Draw a picture of mountains at sunset",
                 "Debug this code: function add(x, y) { retur x + y; }"
               ].map((suggestion) => (
                 <Button 
