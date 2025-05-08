@@ -10,7 +10,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 
 const ChatView: React.FC = () => {
-  const { currentChat, addMessage } = useChatContext();
+  const { currentChat, addMessage, loading: chatsLoading } = useChatContext();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -29,7 +29,7 @@ const ChatView: React.FC = () => {
     setError(null);
     
     // Add user message to chat
-    addMessage(message, "user");
+    await addMessage(message, "user");
 
     // Set loading state while processing
     setIsLoading(true);
@@ -74,14 +74,14 @@ const ChatView: React.FC = () => {
 
       if (data) {
         // Add the assistant's response to the chat
-        addMessage(data.content, "assistant", data.isImage);
+        await addMessage(data.content, "assistant", data.isImage);
       } else {
         throw new Error("No data returned from Azure OpenAI");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to process message:", error);
       setError("Failed to get a response. Please try again.");
-      addMessage("Sorry, I encountered an error processing your request. Please try again.", "assistant");
+      await addMessage("Sorry, I encountered an error processing your request. Please try again.", "assistant");
       toast({
         title: "Error",
         description: "Failed to get a response from AI service. Please try again.",
@@ -91,6 +91,14 @@ const ChatView: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  if (chatsLoading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">

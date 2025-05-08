@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Message } from "../types/chat";
 import { cn } from "@/lib/utils";
-import { Image, Loader2 } from "lucide-react";
+import { Image, Loader2, AlertCircle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -14,6 +14,7 @@ interface ChatMessageProps {
 const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const isUser = message.role === "user";
   const [isImageLoading, setIsImageLoading] = useState(message.isImage || false);
+  const isError = message.content.includes("Sorry, I encountered an error");
   
   // Format date for display
   const formattedDate = new Date(message.timestamp).toLocaleTimeString([], {
@@ -66,6 +67,11 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                   onError={() => setIsImageLoading(false)}
                 />
               </div>
+            </div>
+          ) : isError ? (
+            <div className="flex items-start gap-2 text-destructive">
+              <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+              <p>{message.content}</p>
             </div>
           ) : (
             <div className="prose prose-sm max-w-none dark:prose-invert">

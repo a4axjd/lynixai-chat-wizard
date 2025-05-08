@@ -9,7 +9,65 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      chat_messages: {
+        Row: {
+          chat_id: string
+          content: string
+          id: string
+          is_image: boolean | null
+          role: string
+          timestamp: string | null
+        }
+        Insert: {
+          chat_id: string
+          content: string
+          id?: string
+          is_image?: boolean | null
+          role: string
+          timestamp?: string | null
+        }
+        Update: {
+          chat_id?: string
+          content?: string
+          id?: string
+          is_image?: boolean | null
+          role?: string
+          timestamp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "user_chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_chats: {
+        Row: {
+          created_at: string | null
+          id: string
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
