@@ -58,88 +58,140 @@ serve(async (req) => {
       // Call Azure OpenAI DALL-E API for image generation
       const imagePrompt = messages[messages.length - 1].content;
       
-      console.log("Sending image generation request to Azure OpenAI");
+      console.log(`DALLE deployment name: ${AZURE_OPENAI_DALLE_DEPLOYMENT}`);
+      console.log(`Endpoint: ${AZURE_OPENAI_ENDPOINT}`);
+      console.log(`Sending image generation request to Azure OpenAI with prompt: ${imagePrompt}`);
       
-      const imageResponse = await fetch(
-        `${AZURE_OPENAI_ENDPOINT}/openai/images/generations:submit?api-version=2023-12-01-preview`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "api-key": AZURE_OPENAI_API_KEY,
-          },
-          body: JSON.stringify({
-            prompt: imagePrompt,
-            n: 1,
-            size: "1024x1024",
-            response_format: "url",
-            model: AZURE_OPENAI_DALLE_DEPLOYMENT,
-          }),
-        }
-      );
+      try {
+        const imageResponse = await fetch(
+          `${AZURE_OPENAI_ENDPOINT}/openai/images/generations:submit?api-version=2023-12-01-preview`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "api-key": AZURE_OPENAI_API_KEY,
+            },
+            body: JSON.stringify({
+              prompt: imagePrompt,
+              n: 1,
+              size: "1024x1024",
+              response_format: "url",
+              model: AZURE_OPENAI_DALLE_DEPLOYMENT,
+            }),
+          }
+        );
 
-      if (!imageResponse.ok) {
-        const errorData = await imageResponse.text();
-        console.error("Azure OpenAI image generation error:", errorData);
+        if (!imageResponse.ok) {
+          const errorData = await imageResponse.text();
+          console.error("Azure OpenAI image generation error:", errorData);
+          
+          return new Response(
+            JSON.stringify({ 
+              isImage: false, 
+              content: `I'm sorry, I couldn't generate that image. The Azure OpenAI DALL-E service returned an error: ${errorData}. Please check your AZURE_OPENAI_DALLE_DEPLOYMENT value and make sure it matches exactly with what's in Azure OpenAI.`
+            }),
+            {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+
+        const imageData = await imageResponse.json();
+        console.log("Image generation submitted successfully. Operation location:", imageResponse.headers.get("operation-location"));
         
+        const operationLocation = imageResponse.headers.get("operation-location");
+        if (!operationLocation) {
+          console.error("Missing operation location in response");
+          return new Response(
+            JSON.stringify({ 
+              isImage: false, 
+              content: "The image generation service didn't return a valid operation location. Please try again." 
+            }),
+            {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+        
+        // Poll for the image result
+        let imageResult = null;
+        let attempts = 0;
+        const maxAttempts = 10;
+        
+        while (!imageResult && attempts < maxAttempts) {
+          attempts++;
+          console.log(`Polling attempt ${attempts}/${maxAttempts}`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          const statusResponse = await fetch(operationLocation, {
+            headers: {
+              "api-key": AZURE_OPENAI_API_KEY,
+            },
+          });
+          
+          if (!statusResponse.ok) {
+            const statusError = await statusResponse.text();
+            console.error("Error checking image status:", statusError);
+            continue;
+          }
+          
+          const statusData = await statusResponse.json();
+          console.log("Status check response:", JSON.stringify(statusData));
+          
+          if (statusData.status === "succeeded") {
+            if (statusData.result && statusData.result.data && statusData.result.data.length > 0) {
+              imageResult = statusData.result.data[0].url;
+              break;
+            } else {
+              console.error("Success response but missing image data:", JSON.stringify(statusData));
+            }
+          } else if (statusData.status === "failed") {
+            console.error("Image generation failed:", JSON.stringify(statusData));
+            return new Response(
+              JSON.stringify({ 
+                isImage: false, 
+                content: `Image generation failed: ${statusData.error?.message || "Unknown error"}` 
+              }),
+              {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              }
+            );
+          }
+        }
+        
+        if (!imageResult) {
+          return new Response(
+            JSON.stringify({ 
+              isImage: false, 
+              content: "The image generation took too long to process or failed. Please try again with a simpler prompt." 
+            }),
+            {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+        
+        return new Response(
+          JSON.stringify({
+            isImage: true,
+            content: imageResult,
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      } catch (imageError) {
+        console.error("Unexpected error during image generation:", imageError);
         return new Response(
           JSON.stringify({ 
             isImage: false, 
-            content: "I'm sorry, I couldn't generate that image. The Azure OpenAI DALL-E service returned an error. Please make sure the DALL-E deployment is configured correctly."
+            content: `An unexpected error occurred during image generation: ${imageError.message}` 
           }),
           {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           }
         );
       }
-
-      const imageData = await imageResponse.json();
-      const operationLocation = imageResponse.headers.get("operation-location");
-      
-      // Poll for the image result
-      let imageResult = null;
-      let attempts = 0;
-      const maxAttempts = 10;
-      
-      while (!imageResult && attempts < maxAttempts) {
-        attempts++;
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const statusResponse = await fetch(operationLocation, {
-          headers: {
-            "api-key": AZURE_OPENAI_API_KEY,
-          },
-        });
-        
-        const statusData = await statusResponse.json();
-        
-        if (statusData.status === "succeeded") {
-          imageResult = statusData.result.data[0].url;
-          break;
-        }
-      }
-      
-      if (!imageResult) {
-        return new Response(
-          JSON.stringify({ 
-            isImage: false, 
-            content: "The image generation took too long to process. Please try again with a simpler prompt." 
-          }),
-          {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
-      
-      return new Response(
-        JSON.stringify({
-          isImage: true,
-          content: imageResult,
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
     } else {
       // Regular text completion
       console.log("Sending chat completion request to Azure OpenAI");

@@ -133,6 +133,7 @@ const ChatView: React.FC = () => {
                   variant="outline" 
                   className="justify-start h-auto py-3 px-4 text-left"
                   onClick={() => handleSendMessage(suggestion)}
+                  disabled={isLoading}
                 >
                   <span className="truncate">{suggestion}</span>
                 </Button>
