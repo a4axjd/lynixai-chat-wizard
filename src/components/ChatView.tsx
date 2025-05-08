@@ -35,6 +35,16 @@ const ChatView: React.FC = () => {
     setIsLoading(true);
 
     try {
+      // Check if it's an image generation request
+      const isImageRequest = /generate|create|draw|show|make.*image|picture|photo/i.test(message);
+      
+      if (isImageRequest) {
+        toast({
+          title: "Generating Image",
+          description: "This may take up to 30 seconds. Please be patient.",
+        });
+      }
+
       // Get all previous messages for context (limit to last 10)
       const previousMessages = currentChat?.messages
         .slice(-10)
