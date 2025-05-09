@@ -73,13 +73,15 @@ serve(async (req) => {
       try {
         console.log(`API Key exists: ${!!AZURE_OPENAI_API_KEY}`);
         console.log(`API Key length: ${AZURE_OPENAI_API_KEY ? AZURE_OPENAI_API_KEY.length : 0}`);
-        // this is 
-        const bodyContent = JSON.stringify({
+   
+const bodyContent = JSON.stringify({
   prompt: imagePrompt,
   n: 1,
   size: "1024x1024",
+  model: AZURE_OPENAI_DALLE_DEPLOYMENT,
   response_format: "url"
 });
+
         
         console.log(`Request body: ${bodyContent}`);
         
