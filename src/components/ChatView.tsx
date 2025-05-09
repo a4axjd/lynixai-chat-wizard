@@ -45,9 +45,9 @@ const ChatView: React.FC = () => {
         });
       }
 
-      // Get all previous messages for context (limit to last 10)
+      // Get all previous messages for context (increased from 10 to 25 for better context)
       const previousMessages = currentChat?.messages
-        .slice(-10)
+        .slice(-25)
         .map(msg => ({
           role: msg.role,
           content: msg.content

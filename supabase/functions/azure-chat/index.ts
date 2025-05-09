@@ -265,6 +265,9 @@ Please verify in your Azure OpenAI service that:
       console.log("Sending chat completion request to Azure OpenAI");
       console.log(`Endpoint: ${AZURE_OPENAI_ENDPOINT}/openai/deployments/${AZURE_OPENAI_DEPLOYMENT_NAME}/chat/completions?api-version=2023-05-15`);
       
+      // Improved system prompt for more complete responses
+      const systemPrompt = "You are a helpful assistant that can answer questions, generate HTML/CSS/JS code, fix code bugs, and create images based on user prompts. When asked to create HTML pages or code snippets, always provide complete, detailed, and fully functional code including all necessary sections. For HTML, include all standard elements like doctype, html, head, body, etc. When asked for other content, be thorough and comprehensive in your responses. Format code nicely with markdown code blocks.";
+      
       const chatResponse = await fetch(
         `${AZURE_OPENAI_ENDPOINT}/openai/deployments/${AZURE_OPENAI_DEPLOYMENT_NAME}/chat/completions?api-version=2023-05-15`,
         {
@@ -277,12 +280,13 @@ Please verify in your Azure OpenAI service that:
             messages: [
               {
                 role: "system",
-                content: "You are a helpful assistant that can answer questions, generate HTML/CSS/JS code, fix code bugs, and create images based on user prompts. When asked to create HTML pages, always provide complete, detailed, and fully functional code including all necessary sections (head, body, styling, etc). Respond concisely unless otherwise requested. Format code nicely with markdown code blocks."
+                content: systemPrompt
               },
               ...messages
             ],
             temperature: 0.7,
-            max_tokens: 1500,
+            // Increased max tokens to allow for longer responses
+            max_tokens: 4000,
           }),
         }
       );
