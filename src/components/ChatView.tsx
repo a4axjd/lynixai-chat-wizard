@@ -82,6 +82,17 @@ const ChatView: React.FC = () => {
         return;
       }
 
+      // Check for specific DALL-E deployment errors
+      if (data?.error) {
+        console.error("Azure OpenAI detailed error:", data.error);
+        
+        if (data.deploymentName) {
+          console.log(`Attempted to use DALL-E deployment: ${data.deploymentName}`);
+          console.log(`Azure OpenAI endpoint: ${data.endpoint}`);
+          console.log(`API version used: ${data.apiVersion}`);
+        }
+      }
+
       if (data) {
         // Add the assistant's response to the chat
         await addMessage(data.content, "assistant", data.isImage);
