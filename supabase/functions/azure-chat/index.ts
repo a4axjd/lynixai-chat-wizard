@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const AZURE_OPENAI_API_KEY = Deno.env.get("AZURE_OPENAI_API_KEY");
@@ -61,7 +62,7 @@ serve(async (req) => {
       console.log(`Endpoint: ${AZURE_OPENAI_ENDPOINT}`);
       
       // Update to use 2024-02-01 API version for DALL-E 3
-      const apiVersion = "2024-06-01";
+      const apiVersion = "2024-02-01";
       
       // Use direct path format for the API call
       const imageGenUrl = `${AZURE_OPENAI_ENDPOINT}/openai/images/generations:submit?api-version=${apiVersion}`;
@@ -264,10 +265,6 @@ Please verify in your Azure OpenAI service that:
       console.log("Sending chat completion request to Azure OpenAI");
       console.log(`Endpoint: ${AZURE_OPENAI_ENDPOINT}/openai/deployments/${AZURE_OPENAI_DEPLOYMENT_NAME}/chat/completions?api-version=2023-05-15`);
       
-    // Improved system prompt for more complete responses
-      const systemPrompt = "You are a helpful assistant that can answer questions, generate HTML/CSS/JS code, fix code bugs, and create images based on user prompts. When asked to create HTML pages or code snippets, always provide complete, detailed, and fully functional code including all necessary sections. For HTML, include all standard elements like doctype, html, head, body, etc. When asked for other content, be thorough and comprehensive in your responses. Format code nicely with markdown code blocks.";
-      
-      
       const chatResponse = await fetch(
         `${AZURE_OPENAI_ENDPOINT}/openai/deployments/${AZURE_OPENAI_DEPLOYMENT_NAME}/chat/completions?api-version=2023-05-15`,
         {
@@ -280,13 +277,12 @@ Please verify in your Azure OpenAI service that:
             messages: [
               {
                 role: "system",
-                content: systemPrompt
+                content: "You are a helpful assistant that can answer questions, generate HTML/CSS/JS code, fix code bugs, and create images based on user prompts. When asked to create HTML pages, always provide complete, detailed, and fully functional code including all necessary sections (head, body, styling, etc). Respond concisely unless otherwise requested. Format code nicely with markdown code blocks."
               },
               ...messages
             ],
             temperature: 0.7,
-            // Increased max tokens to allow for longer responses
-            max_tokens: 16384,
+            max_tokens: 1500,
           }),
         }
       );

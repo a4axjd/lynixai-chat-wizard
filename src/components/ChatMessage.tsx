@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Message } from "../types/chat";
 import { cn } from "@/lib/utils";
-import { Image, Loader2, AlertCircle, Download, Copy, Check } from "lucide-react";
+import { Image, Loader2, AlertCircle, Download } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -15,7 +15,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const isUser = message.role === "user";
   const [isImageLoading, setIsImageLoading] = useState(message.isImage || false);
   const isError = message.content.includes("Sorry, I encountered an error");
-  const [copied, setCopied] = useState<{[key: string]: boolean}>({});
   
   // Format date for display
   const formattedDate = new Date(message.timestamp).toLocaleTimeString([], {
@@ -34,16 +33,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
-
-  // Handle code copy
-  const copyToClipboard = (code: string, id: string) => {
-    navigator.clipboard.writeText(code).then(() => {
-      setCopied({ ...copied, [id]: true });
-      setTimeout(() => {
-        setCopied({ ...copied, [id]: false });
-      }, 2000);
-    });
   };
 
   return (
@@ -113,39 +102,21 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                 components={{
                   code({node, className, children, ...props}) {
                     const match = /language-(\w+)/.exec(className || '');
-                    const codeContent = String(children).replace(/\n$/, '');
-                    const codeId = `code-${Math.random().toString(36).substr(2, 9)}`;
-                    
                     return !match ? (
                       <code className={className} {...props}>
                         {children}
                       </code>
                     ) : (
-                      <div className="relative">
-                        <div className="absolute right-2 top-2">
-                          <button 
-                            onClick={() => copyToClipboard(codeContent, codeId)}
-                            className="p-1.5 rounded-md text-white bg-gray-700 hover:bg-gray-600 transition-colors"
-                            title="Copy code"
-                          >
-                            {copied[codeId] ? (
-                              <Check size={14} />
-                            ) : (
-                              <Copy size={14} />
-                            )}
-                          </button>
-                        </div>
-                        <SyntaxHighlighter
-                          style={atomDark}
-                          language={match[1]}
-                          PreTag="div"
-                          className="rounded-md"
-                          {...props}
-                        >
-                          {codeContent}
-                        </SyntaxHighlighter>
-                      </div>
-                    );
+                      <SyntaxHighlighter
+                        style={atomDark}
+                        language={match[1]}
+                        PreTag="div"
+                        className="rounded-md"
+                        {...props}
+                      >
+                        {String(children).replace(/\n$/, '')}
+                      </SyntaxHighlighter>
+                    )
                   }
                 }}
               >
