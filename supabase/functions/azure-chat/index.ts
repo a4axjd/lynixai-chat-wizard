@@ -268,68 +268,60 @@ Please verify in your Azure OpenAI service that:
       // Improved system prompt for more complete responses
       const systemPrompt = "You are a helpful assistant that can answer questions, generate HTML/CSS/JS code, fix code bugs, and create images based on user prompts. When asked to create HTML pages or code snippets, always provide complete, detailed, and fully functional code including all necessary sections. For HTML, include all standard elements like doctype, html, head, body, etc. When asked for other content, be thorough and comprehensive in your responses. Format code nicely with markdown code blocks.";
       
-      const chatResponse = await fetch(
-        `${AZURE_OPENAI_ENDPOINT}/openai/deployments/${AZURE_OPENAI_DEPLOYMENT_NAME}/chat/completions?api-version=2023-05-15`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "api-key": AZURE_OPENAI_API_KEY,
-          },
-          body: JSON.stringify({
-            messages: [
-              {
-                role: "system",
-                content: systemPrompt
-              },
-              ...messages
-            ],
-            temperature: 0.7,
-            // Increased max tokens to allow for longer responses
-            max_tokens: 4000,
-          }),
-        }
-      );
+           const chatResponse = await fetch(`${AZURE_OPENAI_ENDPOINT}/openai/deployments/${AZURE_OPENAI_DEPLOYMENT_NAME}/chat/completions?api-version=2023-05-15`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": AZURE_OPENAI_API_KEY
+        },
+        body: JSON.stringify({
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...messages
+          ],
+          temperature: 0.7
+        })
+      });
 
       if (!chatResponse.ok) {
         const errorText = await chatResponse.text();
-        console.error("Azure OpenAI error:", errorText);
-        
-        return new Response(
-          JSON.stringify({ 
-            isImage: false, 
-            content: "I'm sorry, I couldn't process your request due to a connection issue with Azure OpenAI. Please try again in a moment or contact support if this persists." 
-          }),
-          {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
-
-      const chatData = await chatResponse.json();
-      const responseContent = chatData.choices[0].message.content;
-
-      return new Response(
-        JSON.stringify({
+        console.error("Chat completion error:", errorText);
+        return new Response(JSON.stringify({
           isImage: false,
-          content: responseContent,
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-  } catch (error) {
-    console.error("Error:", error.message);
-    return new Response(
-      JSON.stringify({ 
-        isImage: false, 
-        content: "I encountered an unexpected error processing your request. Please try again or contact support if this persists." 
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+          content: "An error occurred while processing your request.",
+          error: errorText
+        }), {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json"
+          }
+        });
       }
-    );
+
+      const data = await chatResponse.json();
+      const reply = data.choices?.[0]?.message?.content || "No response from assistant.";
+      return new Response(JSON.stringify({
+        isImage: false,
+        content: reply
+      }), {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json"
+        }
+      });
+    }
+  } catch (e) {
+    console.error("Unexpected server error:", e);
+    return new Response(JSON.stringify({
+      isImage: false,
+      content: "An unexpected server error occurred.",
+      error: e.message
+    }), {
+      status: 500,
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "application/json"
+      }
+    });
   }
 });
