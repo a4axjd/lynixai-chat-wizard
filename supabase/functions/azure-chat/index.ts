@@ -62,7 +62,7 @@ serve(async (req) => {
       console.log(`Endpoint: ${AZURE_OPENAI_ENDPOINT}`);
       
       // Updated API version to 2023-06-01-preview for compatibility with DALL-E 3
-      const apiVersion = "2023-06-01-preview";
+      const apiVersion = "2024-02-01";
       const imageGenUrl = `${AZURE_OPENAI_ENDPOINT}/openai/deployments/${AZURE_OPENAI_DALLE_DEPLOYMENT}/images/generations?api-version=${apiVersion}`;
       
       console.log(`Image generation URL: ${imageGenUrl}`);
