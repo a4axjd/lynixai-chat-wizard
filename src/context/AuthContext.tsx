@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { Provider } from "@supabase/supabase-js";
 
 type AuthContextType = {
   session: Session | null;
@@ -11,7 +12,10 @@ type AuthContextType = {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  isNewUser: boolean;
+  setIsNewUser: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,6 +32,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isNewUser, setIsNewUser] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -40,6 +45,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(currentSession?.user ?? null);
         
         if (event === 'SIGNED_IN') {
+          // Check if this is a new user
+          checkForUserProfile(currentSession?.user?.id);
           navigate('/');
         } else if (event === 'SIGNED_OUT') {
           navigate('/auth');
@@ -51,6 +58,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
+      if (currentSession?.user) {
+        checkForUserProfile(currentSession.user.id);
+      }
       setLoading(false);
     });
 
@@ -58,6 +68,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       subscription.unsubscribe();
     };
   }, [navigate]);
+
+  // Check if the user already has a profile
+  const checkForUserProfile = async (userId: string | undefined) => {
+    if (!userId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select()
+        .eq('id', userId)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+      
+      // If no profile exists, this is a new user
+      setIsNewUser(!data);
+      
+      if (!data) {
+        console.log("New user detected - redirecting to profile setup");
+        navigate('/profile-setup');
+      }
+    } catch (error) {
+      console.error("Error checking user profile:", error);
+    }
+  };
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -100,6 +137,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw error;
     }
   };
+  
+  const signInWithGoogle = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+        }
+      });
+      
+      if (error) {
+        toast({
+          title: "Google sign in error",
+          description: error.message,
+          variant: "destructive",
+        });
+        throw error;
+      }
+    } catch (error: any) {
+      console.error("Google sign in error:", error);
+      throw error;
+    }
+  };
 
   const signOut = async () => {
     try {
@@ -130,7 +190,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading,
         signIn,
         signUp,
+        signInWithGoogle,
         signOut,
+        isNewUser,
+        setIsNewUser
       }}
     >
       {children}

@@ -8,6 +8,7 @@ import { ChatProvider } from "./context/ChatContext";
 import { AuthProvider } from "./context/AuthContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import ProfileSetup from "./pages/ProfileSetup";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "./context/AuthContext";
 import { Loader2 } from "lucide-react";
@@ -47,6 +48,14 @@ const AppWithAuth = () => (
           }
         />
         <Route path="/auth" element={<Auth />} />
+        <Route 
+          path="/profile-setup" 
+          element={
+            <ProtectedRoute>
+              <ProfileSetup />
+            </ProtectedRoute>
+          } 
+        />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </ChatProvider>
