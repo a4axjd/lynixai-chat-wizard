@@ -61,11 +61,9 @@ serve(async (req) => {
       console.log(`DALLE deployment name: ${AZURE_OPENAI_DALLE_DEPLOYMENT}`);
       console.log(`Endpoint: ${AZURE_OPENAI_ENDPOINT}`);
       
-      // Update to use 2024-02-01 API version for DALL-E 3
+      // Updated API version to 2023-06-01-preview for compatibility with DALL-E 3
       const apiVersion = "2024-02-01";
-      
-      // Use direct path format for the API call
-      const imageGenUrl = `${AZURE_OPENAI_ENDPOINT}/openai/images/generations:submit?api-version=${apiVersion}`;
+      const imageGenUrl = `${AZURE_OPENAI_ENDPOINT}/openai/deployments/${AZURE_OPENAI_DALLE_DEPLOYMENT}/images/generations?api-version=${apiVersion}`;
       
       console.log(`Image generation URL: ${imageGenUrl}`);
       console.log(`Sending image generation request with prompt: ${imagePrompt}`);
@@ -78,7 +76,6 @@ serve(async (req) => {
           prompt: imagePrompt,
           n: 1,
           size: "1024x1024",
-          model: AZURE_OPENAI_DALLE_DEPLOYMENT,
           response_format: "url"
         });
         
@@ -148,85 +145,13 @@ Please verify in your Azure OpenAI service that:
           );
         }
 
-        // Get the operation-location header for the async operation
-        const operationLocation = imageResponse.headers.get("operation-location");
-        if (!operationLocation) {
-          console.error("Missing operation-location header");
-          return new Response(
-            JSON.stringify({ 
-              isImage: false, 
-              content: "I couldn't generate that image. The Azure OpenAI DALL-E service didn't return an operation location." 
-            }),
-            {
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            }
-          );
-        }
-
-        console.log(`Operation location: ${operationLocation}`);
+        // Successfully processed the image request
+        // For DALL-E 3 in Azure OpenAI, we get the image URL directly in the response
+        const imageData = await imageResponse.json();
+        console.log("Image generation response:", JSON.stringify(imageData));
         
-        // Poll the operation location until the image is ready
-        let imageResult = null;
-        let retries = 0;
-        const maxRetries = 10;
-        
-        while (retries < maxRetries) {
-          console.log(`Polling attempt ${retries + 1}/${maxRetries}`);
-          
-          // Wait 1 second between polling attempts
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          const pollResponse = await fetch(operationLocation, {
-            method: "GET",
-            headers: {
-              "api-key": AZURE_OPENAI_API_KEY,
-            },
-          });
-          
-          if (!pollResponse.ok) {
-            console.error(`Polling failed with status ${pollResponse.status}`);
-            retries++;
-            continue;
-          }
-          
-          const pollData = await pollResponse.json();
-          console.log(`Poll response: ${JSON.stringify(pollData)}`);
-          
-          if (pollData.status === "succeeded") {
-            imageResult = pollData;
-            break;
-          } else if (pollData.status === "failed") {
-            return new Response(
-              JSON.stringify({ 
-                isImage: false, 
-                content: `Image generation failed: ${pollData.error?.message || "Unknown error"}` 
-              }),
-              {
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-              }
-            );
-          }
-          
-          retries++;
-        }
-        
-        if (!imageResult) {
-          return new Response(
-            JSON.stringify({ 
-              isImage: false, 
-              content: "Image generation timed out. Please try again." 
-            }),
-            {
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            }
-          );
-        }
-        
-        // Extract the image URL from the result
-        if (imageResult.result && imageResult.result.data && imageResult.result.data.length > 0) {
-          const imageUrl = imageResult.result.data[0].url;
-          console.log(`Generated image URL: ${imageUrl}`);
-          
+        if (imageData && imageData.data && imageData.data.length > 0 && imageData.data[0].url) {
+          const imageUrl = imageData.data[0].url;
           return new Response(
             JSON.stringify({
               isImage: true,
@@ -237,11 +162,11 @@ Please verify in your Azure OpenAI service that:
             }
           );
         } else {
-          console.error("Missing image URL in result:", JSON.stringify(imageResult));
+          console.error("Missing image URL in response:", JSON.stringify(imageData));
           return new Response(
             JSON.stringify({ 
               isImage: false, 
-              content: "I couldn't generate that image. The Azure OpenAI service returned incomplete data." 
+              content: "I couldn't generate that image. The Azure OpenAI service didn't return an image URL." 
             }),
             {
               headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -277,12 +202,12 @@ Please verify in your Azure OpenAI service that:
             messages: [
               {
                 role: "system",
-                content: "You are a helpful assistant that can answer questions, generate HTML/CSS/JS code, fix code bugs, and create images based on user prompts. When asked to create HTML pages, always provide complete, detailed, and fully functional code including all necessary sections (head, body, styling, etc). Respond concisely unless otherwise requested. Format code nicely with markdown code blocks."
+                content: "You are a helpful assistant that can answer questions, generate HTML/CSS/JS code, fix code bugs, and create images based on user prompts. Respond concisely unless otherwise requested. Format code nicely with markdown code blocks."
               },
               ...messages
             ],
             temperature: 0.7,
-            max_tokens: 1500,
+            max_tokens: 800,
           }),
         }
       );

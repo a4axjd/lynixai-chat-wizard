@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Message } from "../types/chat";
 import { cn } from "@/lib/utils";
-import { Image, Loader2, AlertCircle, Download } from "lucide-react";
+import { Image, Loader2, AlertCircle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -21,19 +21,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
     hour: '2-digit',
     minute: '2-digit'
   });
-
-  // Handle image download
-  const handleDownload = () => {
-    if (!message.isImage) return;
-    
-    // Create a temporary anchor element
-    const link = document.createElement('a');
-    link.href = message.content;
-    link.download = `ai-generated-image-${Date.now()}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
 
   return (
     <div
@@ -62,19 +49,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
           
           {message.isImage ? (
             <div className="mt-2">
-              <div className="flex justify-between items-center mb-2">
-                <div className="inline-flex items-center gap-1 text-sm text-primary-dark font-medium">
-                  <Image size={16} />
-                  <span>Generated Image</span>
-                </div>
-                <button 
-                  onClick={handleDownload}
-                  className="inline-flex items-center gap-1 text-sm text-primary hover:text-primary-dark"
-                  title="Download image"
-                >
-                  <Download size={16} />
-                  <span>Download</span>
-                </button>
+              <div className="inline-flex items-center gap-1 mb-2 text-sm text-primary-dark font-medium">
+                <Image size={16} />
+                <span>Generated Image</span>
               </div>
               <div className="mt-1 rounded-lg overflow-hidden border border-gray-200 relative">
                 {isImageLoading && (
