@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Message } from "../types/chat";
 import { cn } from "@/lib/utils";
-import { Image, Loader2, AlertCircle } from "lucide-react";
+import { Image, Loader2, AlertCircle, Download, Copy, Check } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -15,12 +15,36 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const isUser = message.role === "user";
   const [isImageLoading, setIsImageLoading] = useState(message.isImage || false);
   const isError = message.content.includes("Sorry, I encountered an error");
+  const [copied, setCopied] = useState<{[key: string]: boolean}>({});
   
   // Format date for display
   const formattedDate = new Date(message.timestamp).toLocaleTimeString([], {
     hour: '2-digit',
     minute: '2-digit'
   });
+
+  // Handle image download
+  const handleDownload = () => {
+    if (!message.isImage) return;
+    
+    // Create a temporary anchor element
+    const link = document.createElement('a');
+    link.href = message.content;
+    link.download = `ai-generated-image-${Date.now()}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Handle code copy
+  const copyToClipboard = (code: string, id: string) => {
+    navigator.clipboard.writeText(code).then(() => {
+      setCopied({ ...copied, [id]: true });
+      setTimeout(() => {
+        setCopied({ ...copied, [id]: false });
+      }, 2000);
+    });
+  };
 
   return (
     <div
@@ -49,9 +73,19 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
           
           {message.isImage ? (
             <div className="mt-2">
-              <div className="inline-flex items-center gap-1 mb-2 text-sm text-primary-dark font-medium">
-                <Image size={16} />
-                <span>Generated Image</span>
+              <div className="flex justify-between items-center mb-2">
+                <div className="inline-flex items-center gap-1 text-sm text-primary-dark font-medium">
+                  <Image size={16} />
+                  <span>Generated Image</span>
+                </div>
+                <button 
+                  onClick={handleDownload}
+                  className="inline-flex items-center gap-1 text-sm text-primary hover:text-primary-dark"
+                  title="Download image"
+                >
+                  <Download size={16} />
+                  <span>Download</span>
+                </button>
               </div>
               <div className="mt-1 rounded-lg overflow-hidden border border-gray-200 relative">
                 {isImageLoading && (
@@ -79,21 +113,39 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                 components={{
                   code({node, className, children, ...props}) {
                     const match = /language-(\w+)/.exec(className || '');
+                    const codeContent = String(children).replace(/\n$/, '');
+                    const codeId = `code-${Math.random().toString(36).substr(2, 9)}`;
+                    
                     return !match ? (
                       <code className={className} {...props}>
                         {children}
                       </code>
                     ) : (
-                      <SyntaxHighlighter
-                        style={atomDark}
-                        language={match[1]}
-                        PreTag="div"
-                        className="rounded-md"
-                        {...props}
-                      >
-                        {String(children).replace(/\n$/, '')}
-                      </SyntaxHighlighter>
-                    )
+                      <div className="relative">
+                        <div className="absolute right-2 top-2">
+                          <button 
+                            onClick={() => copyToClipboard(codeContent, codeId)}
+                            className="p-1.5 rounded-md text-white bg-gray-700 hover:bg-gray-600 transition-colors"
+                            title="Copy code"
+                          >
+                            {copied[codeId] ? (
+                              <Check size={14} />
+                            ) : (
+                              <Copy size={14} />
+                            )}
+                          </button>
+                        </div>
+                        <SyntaxHighlighter
+                          style={atomDark}
+                          language={match[1]}
+                          PreTag="div"
+                          className="rounded-md"
+                          {...props}
+                        >
+                          {codeContent}
+                        </SyntaxHighlighter>
+                      </div>
+                    );
                   }
                 }}
               >
