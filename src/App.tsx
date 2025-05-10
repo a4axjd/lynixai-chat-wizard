@@ -20,6 +20,8 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       retry: 1,
       staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+      networkMode: 'online',
     },
   },
 });
@@ -31,7 +33,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="h-6 w-6 md:h-8 md:w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -74,9 +76,9 @@ const AppWithAuth = () => (
 // Main App component
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
+    <TooltipProvider delayDuration={0}>
       <Toaster />
-      <Sonner position="bottom-center" />
+      <Sonner position="bottom-center" closeButton className="z-50" />
       <BrowserRouter>
         <div className="min-h-screen bg-background text-foreground antialiased overflow-hidden">
           <AppWithAuth />

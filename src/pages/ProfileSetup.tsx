@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -71,9 +72,9 @@ const ProfileSetup = () => {
     setIsSubmitting(true);
 
     try {
-      // Insert the profile data into the database with explicit typing
-      const profileData: Partial<Profile> = {
-        id: user.id,
+      // Fix the TypeScript error by creating an object that matches the expected type
+      const profileData = {
+        id: user.id, // Ensure id is always provided and not optional
         full_name: formData.fullName,
         bio: formData.bio,
         interests: formData.interests,
@@ -112,13 +113,13 @@ const ProfileSetup = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-2xl">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl text-center">Welcome to LynixAI!</CardTitle>
-            <p className="text-center text-gray-600">Tell us a bit about yourself to personalize your experience</p>
+        <Card className="shadow-md">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-2xl md:text-3xl text-center">Welcome to LynixAI!</CardTitle>
+            <p className="text-center text-gray-600 text-sm md:text-base">Tell us a bit about yourself to personalize your experience</p>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="fullName">Full Name</Label>
                 <Input
@@ -128,6 +129,7 @@ const ProfileSetup = () => {
                   onChange={handleInputChange}
                   required
                   placeholder="Jane Doe"
+                  className="h-10 md:h-11"
                 />
               </div>
               
@@ -140,6 +142,7 @@ const ProfileSetup = () => {
                   onChange={handleInputChange}
                   placeholder="Tell us a bit about yourself"
                   rows={3}
+                  className="min-h-[80px]"
                 />
               </div>
               

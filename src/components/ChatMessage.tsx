@@ -25,43 +25,30 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   });
 
   // Handle image download
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!message.isImage) return;
     
     try {
       // Convert data URL to blob
-      const fetchImage = async () => {
-        try {
-          const response = await fetch(message.content);
-          const blob = await response.blob();
-          
-          // Create a download link and trigger it
-          const url = window.URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `ai-generated-image-${Date.now()}.png`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          window.URL.revokeObjectURL(url);
-          
-          toast({
-            title: "Download started",
-            description: "Your image is being downloaded",
-          });
-        } catch (error) {
-          console.error("Download failed:", error);
-          toast({
-            title: "Download failed",
-            description: "Could not download the image. Please try again.",
-            variant: "destructive",
-          });
-        }
-      };
+      const response = await fetch(message.content);
+      const blob = await response.blob();
       
-      fetchImage();
+      // Create a download link and trigger it
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `ai-generated-image-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Download started",
+        description: "Your image is being downloaded",
+      });
     } catch (error) {
-      console.error("Error downloading image:", error);
+      console.error("Download failed:", error);
       toast({
         title: "Download failed",
         description: "Could not download the image. Please try again.",
@@ -83,23 +70,23 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   return (
     <div
       className={cn(
-        "py-4 px-6 md:px-8 animate-fade-in",
+        "py-3 md:py-4 px-3 md:px-6 lg:px-8 animate-fade-in",
         isUser ? "bg-white" : "bg-gray-50"
       )}
     >
-      <div className="max-w-3xl mx-auto flex gap-4">
+      <div className="max-w-3xl mx-auto flex gap-3 md:gap-4">
         <div
           className={cn(
-            "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white text-sm",
+            "flex-shrink-0 w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center text-white text-xs md:text-sm",
             isUser ? "bg-primary-dark" : "bg-primary"
           )}
         >
           {isUser ? "U" : "AI"}
         </div>
 
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <div className="flex justify-between items-center mb-1">
-            <span className="font-medium">
+            <span className="font-medium text-sm md:text-base">
               {isUser ? "You" : "LynixAI"}
             </span>
             <span className="text-xs text-gray-500">{formattedDate}</span>
@@ -108,41 +95,41 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
           {message.isImage ? (
             <div className="mt-2">
               <div className="flex justify-between items-center mb-2">
-                <div className="inline-flex items-center gap-1 text-sm text-primary-dark font-medium">
+                <div className="inline-flex items-center gap-1 text-xs md:text-sm text-primary-dark font-medium">
                   <Image size={16} />
                   <span>Generated Image</span>
                 </div>
                 <button 
                   onClick={handleDownload}
-                  className="inline-flex items-center gap-1 text-sm text-primary hover:text-primary-dark"
+                  className="inline-flex items-center gap-1 text-xs md:text-sm text-primary hover:text-primary-dark"
                   title="Download image"
                 >
                   <Download size={16} />
-                  <span>Download</span>
+                  <span className="hidden xs:inline">Download</span>
                 </button>
               </div>
               <div className="mt-1 rounded-lg overflow-hidden border border-gray-200 relative">
                 {isImageLoading && (
                   <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <Loader2 className="h-6 w-6 md:h-8 md:w-8 animate-spin text-primary" />
                   </div>
                 )}
                 <img 
                   src={message.content} 
                   alt="AI generated" 
-                  className="w-full max-h-96 object-contain"
+                  className="w-full max-h-64 md:max-h-96 object-contain"
                   onLoad={() => setIsImageLoading(false)}
                   onError={() => setIsImageLoading(false)}
                 />
               </div>
             </div>
           ) : isError ? (
-            <div className="flex items-start gap-2 text-destructive">
-              <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+            <div className="flex items-start gap-2 text-destructive text-sm md:text-base">
+              <AlertCircle className="w-4 h-4 md:w-5 md:h-5 mt-0.5 flex-shrink-0" />
               <p>{message.content}</p>
             </div>
           ) : (
-            <div className="prose prose-sm max-w-none dark:prose-invert">
+            <div className="prose prose-sm md:prose-base max-w-none prose-headings:scroll-m-20 prose-pre:overflow-x-auto dark:prose-invert">
               <ReactMarkdown
                 components={{
                   code({node, className, children, ...props}) {
@@ -173,7 +160,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                           style={atomDark}
                           language={match[1]}
                           PreTag="div"
-                          className="rounded-md"
+                          className="rounded-md text-sm !p-3 md:!p-4 overflow-x-auto"
+                          showLineNumbers
                           {...props}
                         >
                           {codeContent}
