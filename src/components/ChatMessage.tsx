@@ -6,6 +6,7 @@ import { Image, Loader2, AlertCircle, Download, Copy, Check } from "lucide-react
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { toast } from "@/hooks/use-toast";
 
 interface ChatMessageProps {
   message: Message;
@@ -27,13 +28,46 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const handleDownload = () => {
     if (!message.isImage) return;
     
-    // Create a temporary anchor element
-    const link = document.createElement('a');
-    link.href = message.content;
-    link.download = `ai-generated-image-${Date.now()}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      // Convert data URL to blob
+      const fetchImage = async () => {
+        try {
+          const response = await fetch(message.content);
+          const blob = await response.blob();
+          
+          // Create a download link and trigger it
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `ai-generated-image-${Date.now()}.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+          
+          toast({
+            title: "Download started",
+            description: "Your image is being downloaded",
+          });
+        } catch (error) {
+          console.error("Download failed:", error);
+          toast({
+            title: "Download failed",
+            description: "Could not download the image. Please try again.",
+            variant: "destructive",
+          });
+        }
+      };
+      
+      fetchImage();
+    } catch (error) {
+      console.error("Error downloading image:", error);
+      toast({
+        title: "Download failed",
+        description: "Could not download the image. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Handle code copy
