@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useChatContext } from "@/context/ChatContext";
 import Sidebar from "./Sidebar";
@@ -19,11 +18,12 @@ import {
 
 interface UserProfile {
   id: string;
-  full_name: string;
+  full_name: string | null;
   bio: string | null;
   interests: string | null;
   expertise: string | null;
   preferences: string | null;
+  updated_at: string | null;
 }
 
 const ChatLayout: React.FC = () => {
@@ -43,6 +43,7 @@ const ChatLayout: React.FC = () => {
 
   const fetchUserProfile = async (userId: string) => {
     try {
+      // Use the type assertion to treat the result as UserProfile
       const { data, error } = await supabase
         .from('profiles')
         .select('*')

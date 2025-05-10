@@ -1,10 +1,18 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { Provider } from "@supabase/supabase-js";
+
+interface Profile {
+  id: string;
+  full_name: string | null;
+  bio: string | null;
+  interests: string | null;
+  expertise: string | null;
+  preferences: string | null;
+  updated_at: string | null;
+}
 
 type AuthContextType = {
   session: Session | null;
@@ -74,6 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!userId) return;
 
     try {
+      // Use a more explicit typing to ensure TypeScript understands the structure
       const { data, error } = await supabase
         .from('profiles')
         .select()

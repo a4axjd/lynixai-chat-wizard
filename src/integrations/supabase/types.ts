@@ -44,6 +44,36 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          bio: string | null
+          expertise: string | null
+          full_name: string | null
+          id: string
+          interests: string | null
+          preferences: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          bio?: string | null
+          expertise?: string | null
+          full_name?: string | null
+          id: string
+          interests?: string | null
+          preferences?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          bio?: string | null
+          expertise?: string | null
+          full_name?: string | null
+          id?: string
+          interests?: string | null
+          preferences?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_chats: {
         Row: {
           created_at: string | null

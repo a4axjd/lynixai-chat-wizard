@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,6 +17,16 @@ type ProfileData = {
   expertise: string;
   preferences: string;
 };
+
+interface Profile {
+  id: string;
+  full_name: string | null;
+  bio: string | null;
+  interests: string | null;
+  expertise: string | null;
+  preferences: string | null;
+  updated_at: string | null;
+}
 
 const ProfileSetup = () => {
   const { user, loading, isNewUser, setIsNewUser } = useAuth();
@@ -62,8 +71,8 @@ const ProfileSetup = () => {
     setIsSubmitting(true);
 
     try {
-      // Insert the profile data into the database
-      const { error } = await supabase.from("profiles").upsert({
+      // Insert the profile data into the database with explicit typing
+      const profileData: Partial<Profile> = {
         id: user.id,
         full_name: formData.fullName,
         bio: formData.bio,
@@ -71,7 +80,11 @@ const ProfileSetup = () => {
         expertise: formData.expertise,
         preferences: formData.preferences,
         updated_at: new Date().toISOString(),
-      });
+      };
+
+      const { error } = await supabase
+        .from('profiles')
+        .upsert(profileData);
 
       if (error) {
         throw error;
