@@ -13,7 +13,16 @@ import NotFound from "./pages/NotFound";
 import { useAuth } from "./context/AuthContext";
 import { Loader2 } from "lucide-react";
 
-const queryClient = new QueryClient();
+// Configure query client with sensible defaults for mobile
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+});
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -67,9 +76,11 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
-      <Sonner />
+      <Sonner position="bottom-center" />
       <BrowserRouter>
-        <AppWithAuth />
+        <div className="min-h-screen bg-background text-foreground antialiased overflow-hidden">
+          <AppWithAuth />
+        </div>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

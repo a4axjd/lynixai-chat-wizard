@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from "react";
 import { useChatContext } from "@/context/ChatContext";
 import Sidebar from "./Sidebar";
 import ChatView from "./ChatView";
-import { Menu, LogOut, Loader2, User } from "lucide-react";
+import { Menu, LogOut, Loader2, User, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/context/AuthContext";
@@ -15,6 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { toast } from "@/hooks/use-toast";
 
 interface UserProfile {
   id: string;
@@ -31,7 +33,7 @@ const ChatLayout: React.FC = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const isMobile = useIsMobile();
   const { user, signOut, loading: authLoading } = useAuth();
-  const { loading: chatsLoading } = useChatContext();
+  const { loading: chatsLoading, currentChat } = useChatContext();
   
   const loading = authLoading || chatsLoading;
 
@@ -61,6 +63,47 @@ const ChatLayout: React.FC = () => {
       console.error("Error fetching user profile:", error);
     }
   };
+  
+  const handleDownloadChat = () => {
+    if (!currentChat) {
+      toast({
+        title: "No chat selected",
+        description: "Please select a chat to download.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      const chatTitle = currentChat.title || 'chat';
+      const fileName = `${chatTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.json`;
+      const chatData = JSON.stringify(currentChat, null, 2);
+      
+      const blob = new Blob([chatData], { type: 'application/json' });
+      const href = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = href;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      
+      document.body.removeChild(link);
+      URL.revokeObjectURL(href);
+      
+      toast({
+        title: "Chat downloaded",
+        description: `Successfully saved as ${fileName}`,
+      });
+    } catch (error) {
+      console.error("Error downloading chat:", error);
+      toast({
+        title: "Download failed",
+        description: "There was an error downloading your chat.",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (loading) {
     return (
@@ -71,7 +114,7 @@ const ChatLayout: React.FC = () => {
   }
   
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen overflow-hidden">
       <div className={`${
         isMobile 
           ? `fixed top-0 left-0 z-40 h-full transition-transform duration-300 transform ${
@@ -79,11 +122,11 @@ const ChatLayout: React.FC = () => {
             }`
           : 'relative'
       }`}>
-        <Sidebar />
+        <Sidebar onCloseSidebar={() => setSidebarOpen(false)} />
       </div>
       
       <div className="flex-1 flex flex-col">
-        <header className="h-14 border-b flex items-center px-4 justify-between">
+        <header className="h-14 border-b flex items-center px-4 justify-between sticky top-0 bg-background z-30">
           <div className="flex items-center">
             {isMobile && (
               <Button
@@ -91,6 +134,7 @@ const ChatLayout: React.FC = () => {
                 size="icon"
                 onClick={() => setSidebarOpen(!sidebarOpen)}
                 className="mr-2"
+                aria-label="Toggle sidebar"
               >
                 <Menu size={20} />
               </Button>
@@ -98,12 +142,26 @@ const ChatLayout: React.FC = () => {
             <h1 className="text-xl font-bold text-primary">LynixAI</h1>
           </div>
           
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
+            {currentChat && (
+              <Button 
+                variant="outline" 
+                size="icon"
+                onClick={handleDownloadChat}
+                className="hidden sm:flex"
+                aria-label="Download chat"
+              >
+                <Download size={16} />
+              </Button>
+            )}
+            
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="flex items-center gap-2">
                   <User size={16} />
-                  {userProfile?.full_name || user?.email?.split('@')[0] || 'Profile'}
+                  <span className="hidden sm:inline">
+                    {userProfile?.full_name || user?.email?.split('@')[0] || 'Profile'}
+                  </span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
@@ -112,11 +170,17 @@ const ChatLayout: React.FC = () => {
                 {userProfile && (
                   <>
                     <div className="px-2 py-1.5">
-                      <p className="text-sm font-medium mb-1">{userProfile.full_name}</p>
-                      <p className="text-xs text-muted-foreground">{user?.email}</p>
+                      <p className="text-sm font-medium mb-1">{userProfile.full_name || 'User'}</p>
+                      <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                     </div>
                     <DropdownMenuSeparator />
                   </>
+                )}
+                {currentChat && (
+                  <DropdownMenuItem onClick={handleDownloadChat} className="sm:hidden">
+                    <Download size={16} className="mr-2" />
+                    Download Chat
+                  </DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={signOut}>
                   <LogOut size={16} className="mr-2" />
@@ -127,7 +191,7 @@ const ChatLayout: React.FC = () => {
           </div>
         </header>
         
-        <main className="flex-1 overflow-hidden">
+        <main className="flex-1 overflow-hidden relative">
           <ChatView />
         </main>
       </div>
@@ -137,6 +201,7 @@ const ChatLayout: React.FC = () => {
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-30"
           onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
         />
       )}
     </div>
