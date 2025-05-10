@@ -102,6 +102,29 @@ export default {
         "slide-in-right": "slide-in-right 0.3s ease-out",
         "slide-out-right": "slide-out-right 0.3s ease-out",
       },
+      typography: {
+        DEFAULT: {
+          css: {
+            maxWidth: '100%',
+            pre: {
+              maxWidth: '100%',
+              overflowX: 'auto',
+              '&::-webkit-scrollbar': {
+                height: '8px',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                backgroundColor: 'rgba(156, 163, 175, 0.5)',
+                borderRadius: '4px',
+              },
+            },
+            code: {
+              backgroundColor: 'rgb(243, 244, 246)',
+              borderRadius: '0.25rem',
+              padding: '0.2rem 0.4rem',
+            },
+          },
+        },
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],

@@ -143,11 +143,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                       </code>
                     ) : (
                       <div className="relative">
-                        <div className="absolute right-2 top-2">
+                        <div className="absolute right-2 top-2 z-10">
                           <button 
                             onClick={() => copyToClipboard(codeContent, codeId)}
                             className="p-1.5 rounded-md text-white bg-gray-700 hover:bg-gray-600 transition-colors"
                             title="Copy code"
+                            aria-label="Copy code"
                           >
                             {copied[codeId] ? (
                               <Check size={14} />
@@ -160,8 +161,13 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                           style={atomDark}
                           language={match[1]}
                           PreTag="div"
-                          className="rounded-md text-sm !p-3 md:!p-4 overflow-x-auto"
+                          className="rounded-md text-sm !p-3 md:!p-4 overflow-x-auto max-w-full"
                           showLineNumbers
+                          wrapLines={true}
+                          customStyle={{
+                            maxWidth: '100%',
+                            overflowX: 'auto'
+                          }}
                           {...props}
                         >
                           {codeContent}
