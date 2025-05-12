@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const AZURE_OPENAI_API_KEY = Deno.env.get("AZURE_OPENAI_API_KEY");
@@ -32,10 +33,10 @@ serve(async (req) => {
       );
     }
 
-    const { messages } = await req.json();
+    const { messages, forceImage = false } = await req.json();
     
-    // Check if it's an image generation request
-    const isImageRequest = /generate|create|draw|show|make.*image|picture|photo/i.test(
+    // Check if it's an image generation request based on either forceImage flag or content analysis
+    const isImageRequest = forceImage || /generate|create|draw|show|make.*image|picture|photo/i.test(
       messages[messages.length - 1].content
     );
 

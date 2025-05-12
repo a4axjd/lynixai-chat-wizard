@@ -24,7 +24,7 @@ const ChatView: React.FC = () => {
     scrollToBottom();
   }, [currentChat?.messages]);
 
-  const handleSendMessage = async (message: string) => {
+  const handleSendMessage = async (message: string, imageMode: boolean) => {
     // Reset any previous errors
     setError(null);
     
@@ -35,10 +35,10 @@ const ChatView: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Check if it's an image generation request
-      const isImageRequest = /generate|create|draw|show|make.*image|picture|photo/i.test(message);
+      // Force image generation when in image mode
+      const isImageRequest = imageMode || /generate|create|draw|show|make.*image|picture|photo/i.test(message);
       
-      if (isImageRequest) {
+      if (isImageRequest && !imageMode) {
         toast({
           title: "Generating Image",
           description: "This may take up to 30 seconds. Please be patient.",
@@ -56,13 +56,14 @@ const ChatView: React.FC = () => {
       // Add the new user message
       previousMessages.push({
         role: "user",
-        content: message
+        content: imageMode ? `Generate an image of: ${message}` : message
       });
 
       // Call the Azure OpenAI edge function
       const { data, error } = await supabase.functions.invoke("azure-chat", {
         body: {
-          messages: previousMessages
+          messages: previousMessages,
+          forceImage: imageMode
         }
       });
 
@@ -922,7 +923,7 @@ const ChatView: React.FC = () => {
                   key={suggestion}
                   variant="outline" 
                   className="justify-start h-auto py-3 px-4 text-left"
-                  onClick={() => handleSendMessage(suggestion)}
+                  onClick={() => handleSendMessage(suggestion, suggestion.includes("image"))}
                   disabled={isLoading}
                 >
                   <span className="truncate">{suggestion}</span>
