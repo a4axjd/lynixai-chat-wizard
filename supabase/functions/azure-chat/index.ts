@@ -38,9 +38,7 @@ serve(async (req) => {
     // Check if it's an image generation request:
     // 1. forceImage flag is explicitly set to true (from the image toggle)
     // 2. OR the message content suggests image generation (backup detection)
-    const isImageRequest = forceImage || /generate|create|draw|show|make.*image|picture|photo/i.test(
-      messages[messages.length - 1].content
-    );
+   const isImageRequest = forceImage;
 
     if (isImageRequest) {
       // Check if DALLE deployment is configured
