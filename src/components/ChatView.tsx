@@ -8,11 +8,19 @@ import { Loader2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
+import FullCodeWizard from "./FullCodeWizard";
 
 const ChatView: React.FC = () => {
   const { currentChat, addMessage, loading: chatsLoading, createNewChat } = useChatContext();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showFullCodeWizard, setShowFullCodeWizard] = useState(false);
+  const [fullCodeState, setFullCodeState] = useState({
+    projectType: "",
+    techStack: "",
+    designPrefs: "",
+    features: ""
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -35,7 +43,36 @@ const ChatView: React.FC = () => {
     }
   }, [chatsLoading, currentChat]);
 
+  const handleFullCodeSubmit = async (formData: typeof fullCodeState) => {
+    setFullCodeState(formData);
+    setShowFullCodeWizard(false);
+    
+    // Create project requirements message based on form data
+    const projectReq = `Please generate a complete ${formData.projectType} using ${formData.techStack} with a ${formData.designPrefs} design. The app should include these features: ${formData.features}.
+      
+Please provide:
+1. Directory structure
+2. Key files and components with full code
+3. Configuration files
+4. Installation and deployment instructions`;
+    
+    await handleSendMessage(projectReq, false);
+  };
+
   const handleSendMessage = async (message: string, imageMode: boolean) => {
+    // First check for full code trigger phrases
+    if (!showFullCodeWizard && 
+        (message.toLowerCase().includes("full code mode") || 
+         message.toLowerCase().includes("generate a complete") ||
+         message.toLowerCase().includes("create a complete app") ||
+         message.toLowerCase().includes("build a full") ||
+         message.toLowerCase().includes("generate a full project"))) {
+      setShowFullCodeWizard(true);
+      await addMessage(message, "user");
+      await addMessage("I'll help you build a complete application. Let's gather some requirements first.", "assistant");
+      return;
+    }
+
     // Make sure currentChat exists before proceeding
     if (!currentChat) {
       toast({
@@ -56,12 +93,10 @@ const ChatView: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // When imageMode is true, always generate an image
-      // When imageMode is false, only generate an image if the message seems to request one
-      const isImageRequest = imageMode || 
-        (!imageMode && /generate|create|draw|show|make.*image|picture|photo/i.test(message));
+      // IMPORTANT: Now we strictly rely on the imageMode parameter for image generation
+      // No additional checks for keywords in the message
       
-      if (isImageRequest) {
+      if (imageMode) {
         toast({
           title: "Generating Image",
           description: "This may take up to 30 seconds. Please be patient.",
@@ -171,6 +206,15 @@ const ChatView: React.FC = () => {
     );
   }
 
+  // Show Full Code Wizard when triggered
+  if (showFullCodeWizard) {
+    return (
+      <div className="flex-1 overflow-y-auto p-4">
+        <FullCodeWizard onSubmit={handleFullCodeSubmit} onCancel={() => setShowFullCodeWizard(false)} />
+      </div>
+    );
+  }
+  
   // Ecommerce landing page HTML template
   const ecommerceLandingPage = `<!DOCTYPE html>
 <html lang="en">
@@ -966,7 +1010,7 @@ const ChatView: React.FC = () => {
                 "Create an image of a futuristic city",
                 "Generate an image of a cat wearing sunglasses",
                 "Create a complete HTML ecommerce landing page",
-                "Debug this code: function add(x, y) { retur x + y; }"
+                "Full code mode: Create a React todo app"
               ].map((suggestion) => (
                 <Button 
                   key={suggestion}
