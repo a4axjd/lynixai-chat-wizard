@@ -37,6 +37,42 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const { user } = useAuth();
   const { toast } = useToast();
 
+  // Create default chat when no chats exist
+  const ensureDefaultChat = async () => {
+    // Only create a default chat if user is logged in and there are no chats
+    if (user && chats.length === 0) {
+      try {
+        const newChat: Chat = {
+          id: uuidv4(),
+          title: "New Chat",
+          messages: [],
+          createdAt: Date.now(),
+        };
+
+        // Save chat to Supabase
+        const { error } = await supabase.from("user_chats").insert({
+          id: newChat.id,
+          user_id: user.id,
+          title: newChat.title,
+          created_at: new Date(newChat.createdAt).toISOString(),
+        });
+
+        if (error) throw error;
+
+        setChats([newChat]);
+        setCurrentChatState(newChat);
+        
+      } catch (error) {
+        console.error("Error creating default chat:", error);
+        toast({
+          title: "Error creating chat",
+          description: "Could not create a default chat. Please try refreshing the page.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   // Load chats from Supabase when user logs in
   useEffect(() => {
     const loadChats = async () => {
@@ -52,6 +88,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         const { data: userChats, error: chatsError } = await supabase
           .from("user_chats")
           .select("*")
+          .eq("user_id", user.id) // Ensure we only fetch chats for the current user
           .order("created_at", { ascending: false });
 
         if (chatsError) throw chatsError;
@@ -86,16 +123,18 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
           setChats(chatsWithMessages);
           setCurrentChatState(chatsWithMessages[0]);
         } else {
-          // Create a new chat for first-time users
-          await createNewChat();
+          // No chats exist, we'll create one
+          await ensureDefaultChat();
         }
       } catch (error) {
         console.error("Error loading chats:", error);
         toast({
           title: "Error loading chats",
-          description: "Could not load your chat history. Please try again.",
+          description: "Could not load your chat history. Please try refreshing the page.",
           variant: "destructive",
         });
+        // Attempt to create a default chat if load failed
+        await ensureDefaultChat();
       } finally {
         setLoading(false);
       }

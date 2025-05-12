@@ -31,21 +31,29 @@ interface UserProfile {
 const ChatLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [profileError, setProfileError] = useState(false);
   const isMobile = useIsMobile();
   const { user, signOut, loading: authLoading } = useAuth();
-  const { loading: chatsLoading, currentChat } = useChatContext();
+  const { loading: chatsLoading, currentChat, createNewChat } = useChatContext();
   
   const loading = authLoading || chatsLoading;
 
   useEffect(() => {
     if (user?.id) {
       fetchUserProfile(user.id);
+      
+      // Handle if there's no current chat
+      if (!currentChat && !chatsLoading) {
+        createNewChat().catch(err => {
+          console.error("Failed to create initial chat:", err);
+        });
+      }
     }
-  }, [user]);
+  }, [user, currentChat, chatsLoading]);
 
   const fetchUserProfile = async (userId: string) => {
     try {
-      // Use the type assertion to treat the result as UserProfile
+      setProfileError(false);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -53,13 +61,19 @@ const ChatLayout: React.FC = () => {
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        throw error;
+        console.error("Error fetching profile:", error);
+        setProfileError(true);
+        return;
       }
 
       if (data) {
         setUserProfile(data as UserProfile);
+      } else {
+        setProfileError(true);
+        console.log("No profile found for user:", userId);
       }
     } catch (error) {
+      setProfileError(true);
       console.error("Error fetching user profile:", error);
     }
   };
@@ -113,6 +127,10 @@ const ChatLayout: React.FC = () => {
     );
   }
   
+  const displayName = userProfile?.full_name || 
+                      user?.email?.split('@')[0] || 
+                      (profileError ? 'User' : '');
+  
   return (
     <div className="flex h-screen overflow-hidden">
       <div className={`${
@@ -160,22 +178,18 @@ const ChatLayout: React.FC = () => {
                 <Button variant="outline" size="sm" className="flex items-center gap-2">
                   <User size={16} />
                   <span className="hidden sm:inline">
-                    {userProfile?.full_name || user?.email?.split('@')[0] || 'Profile'}
+                    {displayName}
                   </span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {userProfile && (
-                  <>
-                    <div className="px-2 py-1.5">
-                      <p className="text-sm font-medium mb-1">{userProfile.full_name || 'User'}</p>
-                      <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-                    </div>
-                    <DropdownMenuSeparator />
-                  </>
-                )}
+                <div className="px-2 py-1.5">
+                  <p className="text-sm font-medium mb-1">{displayName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{user?.email || 'Not logged in'}</p>
+                </div>
+                <DropdownMenuSeparator />
                 {currentChat && (
                   <DropdownMenuItem onClick={handleDownloadChat} className="sm:hidden">
                     <Download size={16} className="mr-2" />

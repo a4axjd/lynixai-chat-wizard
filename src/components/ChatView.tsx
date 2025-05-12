@@ -10,7 +10,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 
 const ChatView: React.FC = () => {
-  const { currentChat, addMessage, loading: chatsLoading } = useChatContext();
+  const { currentChat, addMessage, loading: chatsLoading, createNewChat } = useChatContext();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -23,6 +23,17 @@ const ChatView: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [currentChat?.messages]);
+
+  // Create a new chat if none exists
+  useEffect(() => {
+    if (!chatsLoading && !currentChat) {
+      // Attempt to create a new chat if there isn't one
+      createNewChat().catch(error => {
+        console.error("Failed to create a new chat:", error);
+        setError("Could not create a chat session. Please try refreshing the page.");
+      });
+    }
+  }, [chatsLoading, currentChat]);
 
   const handleSendMessage = async (message: string, imageMode: boolean) => {
     // Make sure currentChat exists before proceeding
@@ -128,6 +139,32 @@ const ChatView: React.FC = () => {
     return (
       <div className="h-full flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Show error state if currentChat is still null after loading
+  if (!currentChat && !chatsLoading) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center p-4">
+        <Alert variant="destructive" className="max-w-md">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Session Error</AlertTitle>
+          <AlertDescription>
+            Could not load or create a chat session. Please try signing out and back in.
+          </AlertDescription>
+        </Alert>
+        <Button
+          variant="outline"
+          className="mt-4"
+          onClick={() => {
+            createNewChat().catch(err => {
+              console.error("Failed to create new chat:", err);
+            });
+          }}
+        >
+          Try Again
+        </Button>
       </div>
     );
   }
