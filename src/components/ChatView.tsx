@@ -25,6 +25,16 @@ const ChatView: React.FC = () => {
   }, [currentChat?.messages]);
 
   const handleSendMessage = async (message: string, imageMode: boolean) => {
+    // Make sure currentChat exists before proceeding
+    if (!currentChat) {
+      toast({
+        title: "Error",
+        description: "No active chat session found. Try refreshing the page.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     // Reset any previous errors
     setError(null);
     
@@ -46,7 +56,7 @@ const ChatView: React.FC = () => {
       }
 
       // Get all previous messages for context (increased from 10 to 25 for better context)
-      const previousMessages = currentChat?.messages
+      const previousMessages = currentChat.messages
         .slice(-25)
         .map(msg => ({
           role: msg.role,
