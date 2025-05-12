@@ -30,36 +30,46 @@ export function ThemeProvider({
   storageKey = "ui-theme",
   ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
-  )
-
+  // Use null as initial state to prevent hydration mismatch
+  const [theme, setTheme] = useState<Theme | null>(null)
+  
+  // Initialize theme safely on mount
   useEffect(() => {
-    const root = window.document.documentElement
+    const storedTheme = localStorage?.getItem(storageKey) as Theme || defaultTheme
+    setTheme(storedTheme)
+  }, [defaultTheme, storageKey])
 
-    root.classList.remove("light", "dark")
+  // Apply theme class when theme changes
+  useEffect(() => {
+    if (theme) {
+      const root = window.document.documentElement
+      root.classList.remove("light", "dark")
 
-    if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
-        ? "dark"
-        : "light"
-
-      root.classList.add(systemTheme)
-      return
+      if (theme === "system") {
+        const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+          .matches
+          ? "dark"
+          : "light"
+        root.classList.add(systemTheme)
+      } else {
+        root.classList.add(theme)
+      }
     }
-
-    root.classList.add(theme)
   }, [theme])
 
-  const value = {
-    theme,
-    setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme)
-      setTheme(theme)
-    },
-  }
+  // Avoid rendering children until theme is initialized
+  const value = React.useMemo(
+    () => ({
+      theme: theme || defaultTheme,
+      setTheme: (newTheme: Theme) => {
+        localStorage?.setItem(storageKey, newTheme)
+        setTheme(newTheme)
+      },
+    }),
+    [theme, defaultTheme, storageKey]
+  )
 
+  // Only render children once theme is initialized in browser
   return (
     <ThemeProviderContext.Provider {...props} value={value}>
       {children}
