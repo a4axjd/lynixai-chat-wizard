@@ -56,10 +56,12 @@ const ChatView: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Force image generation when in image mode
-      const isImageRequest = imageMode || /generate|create|draw|show|make.*image|picture|photo/i.test(message);
+      // When imageMode is true, always generate an image
+      // When imageMode is false, only generate an image if the message seems to request one
+      const isImageRequest = imageMode || 
+        (!imageMode && /generate|create|draw|show|make.*image|picture|photo/i.test(message));
       
-      if (isImageRequest && !imageMode) {
+      if (isImageRequest) {
         toast({
           title: "Generating Image",
           description: "This may take up to 30 seconds. Please be patient.",
@@ -74,7 +76,7 @@ const ChatView: React.FC = () => {
           content: msg.content
         }));
 
-      // Add the new user message
+      // Add the new user message, with image prompt formatting if in image mode
       previousMessages.push({
         role: "user",
         content: imageMode ? `Generate an image of: ${message}` : message
@@ -84,7 +86,7 @@ const ChatView: React.FC = () => {
       const { data, error } = await supabase.functions.invoke("azure-chat", {
         body: {
           messages: previousMessages,
-          forceImage: imageMode
+          forceImage: imageMode // Pass imageMode as forceImage parameter
         }
       });
 

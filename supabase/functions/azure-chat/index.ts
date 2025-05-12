@@ -35,7 +35,9 @@ serve(async (req) => {
 
     const { messages, forceImage = false } = await req.json();
     
-    // Check if it's an image generation request based on either forceImage flag or content analysis
+    // Check if it's an image generation request:
+    // 1. forceImage flag is explicitly set to true (from the image toggle)
+    // 2. OR the message content suggests image generation (backup detection)
     const isImageRequest = forceImage || /generate|create|draw|show|make.*image|picture|photo/i.test(
       messages[messages.length - 1].content
     );
