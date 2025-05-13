@@ -11,11 +11,13 @@ import { cn } from "@/lib/utils";
 interface ChatInputProps {
   onSubmit: (message: string, imageMode: boolean, fullCodeMode: boolean) => Promise<void>;
   isLoading?: boolean;
+  onFullCodeToggle: (enabled: boolean) => void; // New prop for handling full code toggle
 }
 
 const ChatInput: React.FC<ChatInputProps> = ({
   onSubmit,
   isLoading = false,
+  onFullCodeToggle,
 }) => {
   const [message, setMessage] = useState("");
   const [imageMode, setImageMode] = useState(false);
@@ -31,6 +33,12 @@ const ChatInput: React.FC<ChatInputProps> = ({
       )}px`;
     }
   }, [message]);
+
+  // Handle full code mode toggle
+  const handleFullCodeToggle = (checked: boolean) => {
+    setFullCodeMode(checked);
+    onFullCodeToggle(checked); // Immediately notify parent component
+  };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -75,7 +83,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
             <Switch
               id="full-code-mode"
               checked={fullCodeMode}
-              onCheckedChange={setFullCodeMode}
+              onCheckedChange={handleFullCodeToggle}
             />
             <Label htmlFor="full-code-mode" className="flex items-center">
               <CodeIcon className={cn("h-4 w-4 mr-1", fullCodeMode ? "text-primary" : "text-muted-foreground")} />

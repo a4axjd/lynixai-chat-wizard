@@ -42,6 +42,15 @@ const ChatView: React.FC = () => {
     }
   }, [chatsLoading, currentChat]);
 
+  // Handle full code toggle - immediately show the wizard when activated
+  const handleFullCodeToggle = (enabled: boolean) => {
+    if (enabled) {
+      setShowFullCodeWizard(true);
+    } else {
+      setShowFullCodeWizard(false);
+    }
+  };
+
   const handleFullCodeSubmit = async (formData: typeof fullCodeState) => {
     setFullCodeState(formData);
     setShowFullCodeWizard(false);
@@ -55,15 +64,13 @@ Please provide:
 3. Configuration files
 4. Installation and deployment instructions`;
     
-    await handleSendMessage(projectReq, false, false);
+    await handleSendMessage(projectReq, false, true);
   };
 
   const handleSendMessage = async (message: string, imageMode: boolean, fullCodeMode: boolean) => {
-    // Strictly rely on the fullCodeMode flag instead of keywords
+    // If in full code mode and form is not shown yet, show it
     if (fullCodeMode && !showFullCodeWizard) {
       setShowFullCodeWizard(true);
-      await addMessage(message, "user");
-      await addMessage("I'll help you build a complete application. Let's gather some requirements first.", "assistant");
       return;
     }
 
@@ -204,7 +211,10 @@ Please provide:
   if (showFullCodeWizard) {
     return (
       <div className="flex-1 overflow-y-auto p-4">
-        <FullCodeWizard onSubmit={handleFullCodeSubmit} onCancel={() => setShowFullCodeWizard(false)} />
+        <FullCodeWizard 
+          onSubmit={handleFullCodeSubmit} 
+          onCancel={() => setShowFullCodeWizard(false)} 
+        />
       </div>
     );
   }
@@ -564,7 +574,7 @@ Please provide:
             flex: 1;
             padding: 15px;
             border: none;
-            border-radius: 4px 0 0 4px;
+            border-radius: 4px;
             font-size: 16px;
         }
         
@@ -1037,7 +1047,11 @@ Please provide:
         <div ref={messagesEndRef} />
       </div>
       
-      <ChatInput onSubmit={handleSendMessage} isLoading={isLoading} />
+      <ChatInput 
+        onSubmit={handleSendMessage} 
+        isLoading={isLoading}
+        onFullCodeToggle={handleFullCodeToggle} 
+      />
     </div>
   );
 };
