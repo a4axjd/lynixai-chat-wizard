@@ -17,6 +17,7 @@ type ProfileData = {
   interests: string;
   expertise: string;
   preferences: string;
+  username: string;
 };
 
 interface Profile {
@@ -27,6 +28,7 @@ interface Profile {
   expertise: string | null;
   preferences: string | null;
   updated_at: string | null;
+  username: string | null;
 }
 
 const ProfileSetup = () => {
@@ -37,10 +39,24 @@ const ProfileSetup = () => {
     interests: "",
     expertise: "",
     preferences: "",
+    username: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Generate a default username from email when component loads
+  useEffect(() => {
+    if (user?.email) {
+      const defaultUsername = user.email.split('@')[0];
+      setFormData(prev => ({
+        ...prev,
+        username: defaultUsername
+      }));
+      checkUsernameAvailability(defaultUsername);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!loading && !isNewUser && user) {
@@ -48,6 +64,25 @@ const ProfileSetup = () => {
       navigate("/");
     }
   }, [loading, isNewUser, user, navigate]);
+
+  // Check if username is available
+  const checkUsernameAvailability = async (username: string) => {
+    if (!username.trim()) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('username', username)
+        .maybeSingle();
+
+      if (error) throw error;
+      
+      setUsernameAvailable(!data);
+    } catch (error) {
+      console.error("Error checking username:", error);
+    }
+  };
 
   if (loading) {
     return (
@@ -65,10 +100,25 @@ const ProfileSetup = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // Check username availability when username changes
+    if (name === 'username') {
+      checkUsernameAvailability(value);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!usernameAvailable) {
+      toast({
+        title: "Username not available",
+        description: "Please choose a different username.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
 
     try {
@@ -80,6 +130,7 @@ const ProfileSetup = () => {
         interests: formData.interests,
         expertise: formData.expertise,
         preferences: formData.preferences,
+        username: formData.username,
         updated_at: new Date().toISOString(),
       };
 
@@ -132,6 +183,22 @@ const ProfileSetup = () => {
                   className="h-10 md:h-11"
                 />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="janedoe"
+                  className="h-10 md:h-11"
+                />
+                {!usernameAvailable && formData.username && (
+                  <p className="text-sm text-destructive">This username is already taken</p>
+                )}
+              </div>
               
               <div className="space-y-2">
                 <Label htmlFor="bio">Bio</Label>
@@ -183,7 +250,7 @@ const ProfileSetup = () => {
               </div>
               
               <CardFooter className="flex justify-end px-0 pt-4">
-                <Button type="submit" disabled={isSubmitting} className="w-full">
+                <Button type="submit" disabled={isSubmitting || !usernameAvailable} className="w-full">
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />

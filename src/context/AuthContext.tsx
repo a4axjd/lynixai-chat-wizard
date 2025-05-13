@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
@@ -12,11 +13,13 @@ interface Profile {
   expertise: string | null;
   preferences: string | null;
   updated_at: string | null;
+  username: string | null;
 }
 
 type AuthContextType = {
   session: Session | null;
   user: User | null;
+  profile: Profile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
@@ -39,6 +42,7 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isNewUser, setIsNewUser] = useState(false);
   const { toast } = useToast();
@@ -47,61 +51,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
+      async (event, currentSession) => {
         console.log("Auth event:", event);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
-        if (event === 'SIGNED_IN') {
+        if (event === 'SIGNED_IN' && currentSession?.user) {
           // Check if this is a new user
-          checkForUserProfile(currentSession?.user?.id);
+          await fetchUserProfile(currentSession.user.id);
           navigate('/');
         } else if (event === 'SIGNED_OUT') {
+          setProfile(null);
           navigate('/auth');
         }
       }
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+    const initializeAuth = async () => {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
+      
       if (currentSession?.user) {
-        checkForUserProfile(currentSession.user.id);
+        await fetchUserProfile(currentSession.user.id);
       }
+      
       setLoading(false);
-    });
+    };
+
+    initializeAuth();
 
     return () => {
       subscription.unsubscribe();
     };
   }, [navigate]);
 
-  // Check if the user already has a profile
-  const checkForUserProfile = async (userId: string | undefined) => {
+  // Fetch user profile including username
+  const fetchUserProfile = async (userId: string | undefined) => {
     if (!userId) return;
 
     try {
-      // Use a more explicit typing to ensure TypeScript understands the structure
       const { data, error } = await supabase
         .from('profiles')
         .select()
         .eq('id', userId)
-        .single();
+        .maybeSingle();
       
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
+      if (error) throw error;
       
-      // If no profile exists, this is a new user
-      setIsNewUser(!data);
-      
-      if (!data) {
+      // If profile exists, set it
+      if (data) {
+        setProfile(data as Profile);
+        setIsNewUser(false);
+      } else {
         console.log("New user detected - redirecting to profile setup");
+        setIsNewUser(true);
         navigate('/profile-setup');
       }
     } catch (error) {
-      console.error("Error checking user profile:", error);
+      console.error("Error fetching user profile:", error);
     }
   };
 
@@ -196,6 +205,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         session,
         user,
+        profile,
         loading,
         signIn,
         signUp,

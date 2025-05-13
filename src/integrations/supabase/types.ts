@@ -53,6 +53,7 @@ export type Database = {
           interests: string | null
           preferences: string | null
           updated_at: string | null
+          username: string | null
         }
         Insert: {
           bio?: string | null
@@ -62,6 +63,7 @@ export type Database = {
           interests?: string | null
           preferences?: string | null
           updated_at?: string | null
+          username?: string | null
         }
         Update: {
           bio?: string | null
@@ -71,6 +73,7 @@ export type Database = {
           interests?: string | null
           preferences?: string | null
           updated_at?: string | null
+          username?: string | null
         }
         Relationships: []
       }

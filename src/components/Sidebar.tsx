@@ -3,10 +3,11 @@ import React, { useState, useEffect } from "react";
 import { useChatContext } from "@/context/ChatContext";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { PlusIcon, Trash2, MessageCircle, ChevronLeft, ChevronRight, Loader2, X } from "lucide-react";
+import { PlusIcon, Trash2, MessageCircle, ChevronLeft, ChevronRight, Loader2, X, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
 
 interface SidebarProps {
   onCloseSidebar?: () => void;
@@ -16,6 +17,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onCloseSidebar }) => {
   const { chats, currentChat, createNewChat, setCurrentChat, clearChats, loading } = useChatContext();
   const [collapsed, setCollapsed] = useState(false);
   const isMobile = useIsMobile();
+  const { profile } = useAuth();
   
   // Automatically collapse sidebar on mobile
   useEffect(() => {
@@ -45,6 +47,15 @@ const Sidebar: React.FC<SidebarProps> = ({ onCloseSidebar }) => {
       collapsed ? "w-16" : isMobile ? "w-[85vw]" : "w-64"
     )}>
       <div className="p-3 border-b border-gray-200 flex items-center justify-between">
+        {!collapsed && (
+          <div className="flex items-center gap-2 pr-2">
+            <User size={16} className="text-primary" />
+            <span className="text-sm font-medium truncate">
+              {profile?.username || 'User'}
+            </span>
+          </div>
+        )}
+        
         <Button
           onClick={() => createNewChat()}
           className={cn(

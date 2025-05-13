@@ -34,7 +34,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const [chats, setChats] = useState<Chat[]>([]);
   const [currentChat, setCurrentChatState] = useState<Chat | null>(null);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
 
   // Create default chat when no chats exist
@@ -47,6 +47,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
           title: "New Chat",
           messages: [],
           createdAt: Date.now(),
+          username: profile?.username || null,
         };
 
         // Save chat to Supabase
@@ -117,6 +118,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
                 isImage: msg.is_image,
               })),
               createdAt: new Date(chat.created_at).getTime(),
+              username: profile?.username || null,
             });
           }
 
@@ -140,8 +142,10 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       }
     };
 
-    loadChats();
-  }, [user]);
+    if (user && profile) {
+      loadChats();
+    }
+  }, [user, profile]);
 
   const createNewChat = async () => {
     if (!user) return;
@@ -152,6 +156,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         title: "New Chat",
         messages: [],
         createdAt: Date.now(),
+        username: profile?.username || null,
       };
 
       // Save chat to Supabase
