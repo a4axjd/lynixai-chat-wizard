@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useChatContext } from "@/context/ChatContext";
 import Sidebar from "./Sidebar";
@@ -26,6 +25,7 @@ interface UserProfile {
   expertise: string | null;
   preferences: string | null;
   updated_at: string | null;
+  username: string | null;
 }
 
 const ChatLayout: React.FC = () => {
@@ -34,22 +34,15 @@ const ChatLayout: React.FC = () => {
   const [profileError, setProfileError] = useState(false);
   const isMobile = useIsMobile();
   const { user, signOut, loading: authLoading } = useAuth();
-  const { loading: chatsLoading, currentChat, createNewChat } = useChatContext();
+  const { loading: chatsLoading, currentChat } = useChatContext();
   
   const loading = authLoading || chatsLoading;
 
   useEffect(() => {
     if (user?.id) {
       fetchUserProfile(user.id);
-      
-      // Handle if there's no current chat
-      if (!currentChat && !chatsLoading) {
-        createNewChat().catch(err => {
-          console.error("Failed to create initial chat:", err);
-        });
-      }
     }
-  }, [user, currentChat, chatsLoading]);
+  }, [user]);
 
   const fetchUserProfile = async (userId: string) => {
     try {
@@ -58,9 +51,9 @@ const ChatLayout: React.FC = () => {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error("Error fetching profile:", error);
         setProfileError(true);
         return;
@@ -128,6 +121,7 @@ const ChatLayout: React.FC = () => {
   }
   
   const displayName = userProfile?.full_name || 
+                      userProfile?.username ||
                       user?.email?.split('@')[0] || 
                       (profileError ? 'User' : '');
   

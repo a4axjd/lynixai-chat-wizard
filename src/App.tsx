@@ -19,6 +19,7 @@ const App = () => {
             <TooltipProvider>
               <Routes>
                 <Route path="/" element={<Index />} />
+                <Route path="/chat/:chatId" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/profile-setup" element={<ProfileSetup />} />
                 <Route path="*" element={<NotFound />} />
