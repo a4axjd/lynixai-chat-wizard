@@ -35,8 +35,8 @@ serve(async (req) => {
 
     const { messages, forceImage = false } = await req.json();
     
-    // IMPORTANT: Strictly rely only on the forceImage flag for image generation
-    // No text content checking - this is determined by the UI toggle only
+    // IMPORTANT: We now strictly rely ONLY on the forceImage flag for image generation
+    // No content checking at all - this is determined purely by the UI toggle
     const isImageRequest = forceImage;
 
     if (isImageRequest) {

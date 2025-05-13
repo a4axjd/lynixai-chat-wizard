@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState } from "react";
 import { useChatContext } from "@/context/ChatContext";
 import ChatMessage from "./ChatMessage";
@@ -56,17 +55,12 @@ Please provide:
 3. Configuration files
 4. Installation and deployment instructions`;
     
-    await handleSendMessage(projectReq, false);
+    await handleSendMessage(projectReq, false, false);
   };
 
-  const handleSendMessage = async (message: string, imageMode: boolean) => {
-    // First check for full code trigger phrases
-    if (!showFullCodeWizard && 
-        (message.toLowerCase().includes("full code mode") || 
-         message.toLowerCase().includes("generate a complete") ||
-         message.toLowerCase().includes("create a complete app") ||
-         message.toLowerCase().includes("build a full") ||
-         message.toLowerCase().includes("generate a full project"))) {
+  const handleSendMessage = async (message: string, imageMode: boolean, fullCodeMode: boolean) => {
+    // Strictly rely on the fullCodeMode flag instead of keywords
+    if (fullCodeMode && !showFullCodeWizard) {
       setShowFullCodeWizard(true);
       await addMessage(message, "user");
       await addMessage("I'll help you build a complete application. Let's gather some requirements first.", "assistant");
@@ -1016,7 +1010,11 @@ Please provide:
                   key={suggestion}
                   variant="outline" 
                   className="justify-start h-auto py-3 px-4 text-left"
-                  onClick={() => handleSendMessage(suggestion, suggestion.includes("image"))}
+                  onClick={() => handleSendMessage(
+                    suggestion, 
+                    suggestion.includes("image"), 
+                    suggestion.includes("Full code mode") || suggestion.includes("full code mode")
+                  )}
                   disabled={isLoading}
                 >
                   <span className="truncate">{suggestion}</span>
